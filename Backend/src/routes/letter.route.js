@@ -1,13 +1,19 @@
 import { Router } from "express";
-import { saveLetter } from "../controllers/letter.controller.js";
+import {
+  saveLetter,
+  getHistory,
+  sendEmail,
+  approval,
+} from "../controllers/letter.controller.js";
+import { verifyJWT } from "../middlewares/auth.middleware.js";
+
 const router = Router();
 router.route("/hello").get((req, res) => {
   res.send("Hi");
 });
-router.route("/approve").patch();
-router.route("/reject").patch();
-router.route("/download").get();
-router.route("/save/:type").post(saveLetter);
-router.route("/sendMail").post();
+router.route("/approve/:id").patch(approval);
+router.route("/save/:type").post(verifyJWT, saveLetter);
+router.route("/sendMail").post(verifyJWT, sendEmail);
+router.route("/getHistory").get(verifyJWT, getHistory);
 
 export default router;

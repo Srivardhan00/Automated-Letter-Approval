@@ -21,7 +21,6 @@ const letterSchema = new Schema({
   },
   thatTypeLetterId: {
     type: Schema.Types.ObjectId,
-    refPath: "typeOfLetter",
   },
   facultyEmail: {
     type: String,
