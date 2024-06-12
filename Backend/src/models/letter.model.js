@@ -33,10 +33,10 @@ const letterSchema = new Schema({
     type: String,
   },
   status: {
-    default: "pending",
+    default: "notUsed",
     type: String,
-    enum: ["pending", "approved", "rejected"],
+    enum: ["notUsed", "pending", "approved", "rejected"],
   },
 });
 
-export const letter = mongoose.model("letter", letterSchema);
+export const Letter = mongoose.model("letter", letterSchema);

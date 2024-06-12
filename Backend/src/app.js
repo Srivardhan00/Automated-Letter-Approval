@@ -26,6 +26,6 @@ import userRouter from "./routes/user.route.js";
 app.use("/user", userRouter);
 
 import letterRouter from "./routes/letter.route.js";
-app.use("/letter", letterRouter);
 
+app.use("/letter", letterRouter);
 export { app };
