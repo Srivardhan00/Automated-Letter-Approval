@@ -6,11 +6,12 @@ import { ApiResponse } from "../Utils/ApiResponse.js";
 import { Outpass } from "../models/outpass.model.js";
 import generatePDFAndSaveToFile from "../utils/generatePdf.js";
 import sendMail from "../utils/sendEmail.js";
+import generateQR from "../utils/generateQR.js";
 
 const saveLetter = asyncHandler(async (req, res) => {
   const { type } = req.params;
   const data = req.body;
-  let result;
+  let result, createdLetter;
   let user = req.user;
   // console.log(req.user);
   switch (type) {
@@ -51,13 +52,13 @@ const saveLetter = asyncHandler(async (req, res) => {
         status: "pending",
       });
 
-      const createdLetter = await Letter.findById(letter._id);
+      createdLetter = await Letter.findById(letter._id);
 
       if (!createdLetter) {
         res.status(500).json(new ApiError(500, "Unable to save into DB"));
       }
 
-      console.log(createdLetter);
+      // console.log(createdLetter);
 
       break;
     // Add more cases for other letter types here
@@ -67,8 +68,9 @@ const saveLetter = asyncHandler(async (req, res) => {
     default:
       return res.status(400).json({ error: `Invalid letter type: ${type}` });
   }
-  const letter = new Letter();
-  res.status(200).json(new ApiResponse(200, [], "Successfully saved"));
+  res
+    .status(200)
+    .json(new ApiResponse(200, createdLetter, "Successfully saved"));
 });
 
 const getHistory = asyncHandler(async (req, res) => {
@@ -103,15 +105,19 @@ const sendEmail = asyncHandler(async (req, res) => {
       return res.status(400).json(new ApiError(400, "Invalid Letter"));
     }
 
+    if (letterBef.status !== "notUsed") {
+      return res.status(400).json(new ApiError(400, "Letter was already Used"));
+    }
+
     // Update and save the letter (assuming letterBef is a mongoose document)
     // Make sure to handle validation errors by passing { validateBeforeSave: false }
     letterBef.set({
-      status: "sent", // Update status or any other fields as needed
+      status: "pending", // Update status or any other fields as needed
     });
     await letterBef.save({ validateBeforeSave: false });
 
     // Call sendEmail function (assuming it's asynchronous and returns a promise)
-    const mailResponse = await sendEmail(
+    const mailResponse = await sendMail(
       {
         sName: user.firstName + " " + user.lastName,
         rollNum: user.rollNum,
@@ -153,21 +159,25 @@ const approval = asyncHandler(async (req, res) => {
 
     const approved = req.body.approved; // Assuming you expect an 'approved' boolean in the request body
 
-    if (approved === true) {
-      letter.status = "approved";
-    } else {
+    if (!approved) {
       letter.status = "rejected";
+      await letter.save({ validateBeforeSave: false });
+      res
+        .status(200)
+        .json(new ApiResponse(200, letter, "Successfully Rejected"));
     }
 
-    await letter.save({ validateBeforeSave: false });
-    
-    res.status(200).json(new ApiResponse(200, letter, "Letter status updated successfully"));
+    generateQR("http://localhost:6000/letter/:id");
 
+    const uploadedQR = uploadOnCloudinary("qr.png");
+
+    res
+      .status(200)
+      .json(new ApiResponse(200, letter, "Letter status updated successfully"));
   } catch (error) {
     console.error("Error updating letter status:", error);
     res.status(500).json(new ApiError(500, "Internal Server Error"));
   }
 });
-
 
 export { saveLetter, getHistory, sendEmail, approval };
