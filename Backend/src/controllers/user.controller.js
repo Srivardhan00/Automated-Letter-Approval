@@ -1,5 +1,5 @@
 import { asyncHandler } from "../Utils/asyncHandler.js";
-import { ApiError } from "../Utils/ApiError.js";
+import { ApiError } from "../utils/ApiError.js";
 import { User } from "../Models/user.model.js";
 import { ApiResponse } from "../Utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
@@ -53,7 +53,7 @@ const registerUser = asyncHandler(async (req, res) => {
 
 const loginUser = asyncHandler(async (req, res) => {
   //get from req
-  const {username, password } = req.body;
+  const { username, password } = req.body;
   if (!username) {
     throw new ApiError(400, "Username or email is required");
   }
@@ -68,7 +68,6 @@ const loginUser = asyncHandler(async (req, res) => {
   if (!user) {
     throw new ApiError(400, "Invalid username");
   }
-
   //password check
   const passwordValid = await user.passwordCheck(password);
   if (!passwordValid) {
@@ -84,7 +83,6 @@ const loginUser = asyncHandler(async (req, res) => {
   const loggedIn = await User.findById(user._id).select(
     "-password -refreshToken"
   );
-
   //set up cookie options
   //with these options only server can modify cookies
   const options = {

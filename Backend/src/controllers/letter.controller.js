@@ -4,6 +4,7 @@ import { Letter } from "../Models/letter.model.js";
 import { uploadOnCloudinary } from "../Utils/cloudinary.js";
 import { ApiResponse } from "../Utils/ApiResponse.js";
 import { Outpass } from "../models/outpass.model.js";
+import { Event } from "../models/event.js";
 import generatePDFAndSaveToFile from "../utils/generatePdf.js";
 import sendMail from "../utils/sendEmail.js";
 import generateQR from "../utils/generateQR.js";
@@ -13,15 +14,17 @@ const saveLetter = asyncHandler(async (req, res) => {
   const data = req.body;
   let result, createdLetter;
   let user = req.user;
+  let apiKey, apiUrl, requestData, uploadedRes;
+  const filePath = "mypdf.pdf";
   // console.log(req.user);
   switch (type) {
     case "outpass":
       const outpass = new Outpass(data);
       result = await outpass.save();
       // Example usage:
-      const apiUrl = "https://pdfgen.app/api/generate?templateId=bc43343";
-      const apiKey = "su1eciFshoWDAwXmeQtxJ";
-      const requestData = {
+      apiUrl = "https://pdfgen.app/api/generate?templateId=bc43343";
+      apiKey = "su1eciFshoWDAwXmeQtxJ";
+      requestData = {
         data: {
           date: outpass.date,
           name: user.firstName + " " + user.lastName,
@@ -31,42 +34,53 @@ const saveLetter = asyncHandler(async (req, res) => {
           yearOfStudy: outpass.yearOfStudy,
         },
       };
-      const filePath = "mypdf.pdf";
-
-      await generatePDFAndSaveToFile(apiUrl, apiKey, requestData, filePath)
-        .then()
-        .catch();
-      let uploadedRes;
+      await generatePDFAndSaveToFile(apiUrl, apiKey, requestData, filePath);
       try {
         uploadedRes = await uploadOnCloudinary(filePath);
       } catch (error) {
         throw new ApiError(500, "Uploading to cloud was failed");
       }
-      // console.log(uploadedRes);
-
-      const letter = await Letter.create({
-        userId: user._id,
-        typeOfLetter: type,
-        thatTypeLetterId: result._id,
-        letterLinkEmpty: uploadedRes.url,
-        status: "pending",
-      });
-
-      createdLetter = await Letter.findById(letter._id);
-
-      if (!createdLetter) {
-        res.status(500).json(new ApiError(500, "Unable to save into DB"));
-      }
-
-      // console.log(createdLetter);
-
       break;
-    // Add more cases for other letter types here
-    // case 'abc':
-    //   result = await handleAbcType(data);
-    //   break;
+    // console.log(uploadedRes);
+    case "event":
+      const event = new Event(data);
+      result = await event.save();
+      // Example usage:
+      apiUrl = "https://pdfgen.app/api/generate?templateId=3538066";
+      apiKey = "zgqRTbD2vxfr6zPdLad8";
+      requestData = {
+        data: {
+          dep: event.dep,
+          date: event.date,
+          event: event.event,
+          venue: event.venue,
+          detail: event.detail,
+          evedate: event.evedate,
+          subject: event.subject,
+          approvedBy: event.approvedBy,
+          additionalinfo: event.additionalinfo,
+        },
+      };
+      await generatePDFAndSaveToFile(apiUrl, apiKey, requestData, filePath);
+      try {
+        uploadedRes = await uploadOnCloudinary(filePath);
+      } catch (error) {
+        throw new ApiError(500, "Uploading to cloud was failed");
+      }
+      break;
     default:
       return res.status(400).json({ error: `Invalid letter type: ${type}` });
+  }
+  const letter = await Letter.create({
+    userId: user._id,
+    typeOfLetter: type,
+    thatTypeLetterId: result._id,
+    letterLinkEmpty: uploadedRes.url,
+    status: "pending",
+  });
+  createdLetter = await Letter.findById(letter._id);
+  if (!createdLetter) {
+    res.status(500).json(new ApiError(500, "Error while saving into DB"));
   }
   res
     .status(200)
