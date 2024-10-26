@@ -16,6 +16,7 @@ export default async function generatePDFAndSaveToFile(
       },
       responseType: "stream",
     });
+
     const writer = fs.createWriteStream(filePath);
     response.data.pipe(writer);
     return new Promise((resolve, reject) => {
@@ -27,6 +28,6 @@ export default async function generatePDFAndSaveToFile(
       });
     });
   } catch (error) {
-    throw new ApiError(500, "Error downloading PDF");
+    throw new ApiError(500, error);
   }
 }

@@ -24,4 +24,22 @@ app.use(cors(corsOptions));
 app.use("/user", userRouter);
 app.use("/letter", letterRouter);
 
+// Error-handling middleware
+app.use((err, req, res, next) => {
+  // If the error is an instance of ApiError, use its properties to build the response
+  // if (err instanceof ApiError) {
+  return res.status(err.statusCode).json({
+    success: err.success,
+    message: err.message,
+    errors: err.errors,
+    data: err.data,
+  });
+  // }
+  // For unexpected errors, use a generic error response
+  return res.status(500).json({
+    success: false,
+    message: "Internal Server khdsbkfbksk",
+  });
+});
+
 export { app };
