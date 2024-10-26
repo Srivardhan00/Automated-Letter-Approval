@@ -7,5 +7,3 @@ const generateQR = (url) => {
 };
 
 export default generateQR;
-
-generateQR("hello world");
