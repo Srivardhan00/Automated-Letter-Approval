@@ -1,25 +1,11 @@
 import React from "react";
-import { Link } from "react-router-dom";
-import Avatar from "@mui/material/Avatar";
-import Button from "@mui/material/Button";
-import CssBaseline from "@mui/material/CssBaseline";
-import TextField from "@mui/material/TextField";
-import Grid from "@mui/material/Grid";
-import Box from "@mui/material/Box";
-import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
-import Typography from "@mui/material/Typography";
-import Container from "@mui/material/Container";
-import { createTheme, ThemeProvider } from "@mui/material/styles";
-import { useForm, Controller } from "react-hook-form";
+import { Link, useNavigate } from "react-router-dom";
+import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as Yup from "yup";
-import branch from "../components/Department";
+import axios from "axios";
 import { ToastContainer, toast, Bounce } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import axios from "axios";
-import { useNavigate } from 'react-router-dom';
-
-const defaultTheme = createTheme();
 
 const validationSchema = Yup.object().shape({
   firstName: Yup.string()
@@ -42,20 +28,19 @@ const validationSchema = Yup.object().shape({
     .min(6, "Password must be between 6 and 12 characters")
     .max(12, "Password must be between 6 and 12 characters")
     .required("Password is required"),
-  // branch: Yup.string().required("branch is required"),
 });
 
 export default function SignUp() {
   const navigate = useNavigate();
   const {
-    control,
+    register,
     handleSubmit,
     watch,
     setValue,
     formState: { errors, isValid },
   } = useForm({
     resolver: yupResolver(validationSchema),
-    mode: "onChange", // Enable onChange mode to update validity on field change
+    mode: "onChange",
   });
 
   const rollNum = watch("rollNum");
@@ -76,7 +61,7 @@ export default function SignUp() {
           headers: {
             "Content-Type": "application/json",
           },
-          withCredentials: true, // if you need to send cookies or other credentials
+          withCredentials: true,
         }
       );
 
@@ -92,7 +77,7 @@ export default function SignUp() {
         theme: "dark",
         transition: Bounce,
       });
-      navigate("/home")
+      navigate("/home");
     } catch (error) {
       console.error("Register failed:", error);
       if (error.response) {
@@ -107,164 +92,79 @@ export default function SignUp() {
           progress: undefined,
           theme: "dark",
           transition: Bounce,
-          });
+        });
       }
     }
   };
 
   return (
-    <ThemeProvider theme={defaultTheme}>
-      <Container component="main" maxWidth="xs">
-        <CssBaseline />
-        <Box
-          sx={{
-            marginTop: 3,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-          }}
-        >
-          <Avatar sx={{ m: 1, bgcolor: "secondary.main" }}>
-            <LockOutlinedIcon />
-          </Avatar>
-          <Typography component="h1" variant="h5">
-            Sign up
-          </Typography>
-          <Box
-            component="form"
-            noValidate
-            onSubmit={handleSubmit(onSubmit)}
-            sx={{ mt: 3 }}
-          >
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
-                <Controller
-                  name="firstName"
-                  control={control}
-                  defaultValue=""
-                  render={({ field }) => (
-                    <TextField
-                      {...field}
-                      fullWidth
-                      id="firstName"
-                      label="First Name"
-                      error={!!errors.firstName}
-                      helperText={errors.firstName?.message}
-                    />
-                  )}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <Controller
-                  name="lastName"
-                  control={control}
-                  defaultValue=""
-                  render={({ field }) => (
-                    <TextField
-                      {...field}
-                      fullWidth
-                      id="lastName"
-                      label="Last Name"
-                      error={!!errors.lastName}
-                      helperText={errors.lastName?.message}
-                    />
-                  )}
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <Controller
-                  name="username"
-                  control={control}
-                  defaultValue=""
-                  render={({ field }) => (
-                    <TextField
-                      {...field}
-                      fullWidth
-                      id="username"
-                      label="Username"
-                      error={!!errors.username}
-                      helperText={errors.username?.message}
-                    />
-                  )}
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <Controller
-                  name="rollNum"
-                  control={control}
-                  defaultValue=""
-                  render={({ field }) => (
-                    <TextField
-                      {...field}
-                      fullWidth
-                      id="rollNum"
-                      label="Roll Number"
-                      error={!!errors.rollNum}
-                      helperText={errors.rollNum?.message}
-                    />
-                  )}
-                />
-              </Grid>
-             {/* { <branch control={control} errors={errors} />} */}
-              <Grid item xs={12}>
-                <Controller
-                  name="email"
-                  control={control}
-                  defaultValue=""
-                  render={({ field }) => (
-                    <TextField
-                      {...field}
-                      fullWidth
-                      id="email"
-                      label="Email Address"
-                      InputProps={{
-                        readOnly: true,
-                      }}
-                      error={!!errors.email}
-                      helperText={errors.email?.message}
-                    />
-                  )}
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <Controller
-                  name="password"
-                  control={control}
-                  defaultValue=""
-                  render={({ field }) => (
-                    <TextField
-                      {...field}
-                      fullWidth
-                      name="password"
-                      label="Password"
-                      type="password"
-                      id="password"
-                      error={!!errors.password}
-                      helperText={errors.password?.message}
-                    />
-                  )}
-                />
-              </Grid>
-            </Grid>
-            <Button
-              type="submit"
-              fullWidth
-              variant="contained"
-              sx={{ mt: 3, mb: 2 }}
-              // disabled={!isValid} // Disable the button if the form is not valid
-            >
-              Sign Up
-            </Button>
-            <Grid container justifyContent="flex-end">
-              <Grid item>
-                <Link to="/login" variant="body2">
-                  Already have an account? Sign in
-                </Link>
-              </Grid>
-            </Grid>
-          </Box>
-        </Box>
-      </Container>
-    </ThemeProvider>
+    <div className="container">
+      <h1>Sign Up</h1>
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <div className="form-group">
+          <label htmlFor="firstName">First Name</label>
+          <input
+            id="firstName"
+            {...register("firstName")}
+            className={`form-control ${errors.firstName ? "is-invalid" : ""}`}
+          />
+          <div className="invalid-feedback">{errors.firstName?.message}</div>
+        </div>
+        <div className="form-group">
+          <label htmlFor="lastName">Last Name</label>
+          <input
+            id="lastName"
+            {...register("lastName")}
+            className={`form-control ${errors.lastName ? "is-invalid" : ""}`}
+          />
+          <div className="invalid-feedback">{errors.lastName?.message}</div>
+        </div>
+        <div className="form-group">
+          <label htmlFor="username">Username</label>
+          <input
+            id="username"
+            {...register("username")}
+            className={`form-control ${errors.username ? "is-invalid" : ""}`}
+          />
+          <div className="invalid-feedback">{errors.username?.message}</div>
+        </div>
+        <div className="form-group">
+          <label htmlFor="rollNum">Roll Number</label>
+          <input
+            id="rollNum"
+            {...register("rollNum")}
+            className={`form-control ${errors.rollNum ? "is-invalid" : ""}`}
+          />
+          <div className="invalid-feedback">{errors.rollNum?.message}</div>
+        </div>
+        <div className="form-group">
+          <label htmlFor="email">Email Address</label>
+          <input
+            id="email"
+            {...register("email")}
+            className={`form-control ${errors.email ? "is-invalid" : ""}`}
+            readOnly
+          />
+          <div className="invalid-feedback">{errors.email?.message}</div>
+        </div>
+        <div className="form-group">
+          <label htmlFor="password">Password</label>
+          <input
+            id="password"
+            type="password"
+            {...register("password")}
+            className={`form-control ${errors.password ? "is-invalid" : ""}`}
+          />
+          <div className="invalid-feedback">{errors.password?.message}</div>
+        </div>
+        <button type="submit" className="btn btn-primary" disabled={!isValid}>
+          Sign Up
+        </button>
+        <div className="form-group">
+          <Link to="/login">Already have an account? Sign in</Link>
+        </div>
+      </form>
+      <ToastContainer />
+    </div>
   );
 }
