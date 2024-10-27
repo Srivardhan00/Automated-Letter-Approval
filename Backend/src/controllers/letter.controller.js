@@ -96,6 +96,7 @@ const getHistory = asyncHandler(async (req, res) => {
     if (letters.length === 0) {
       return res.status(200).json(new ApiResponse(200, [], "No History Found"));
     }
+    console.log("sent");
 
     res
       .status(200)

@@ -8,9 +8,7 @@ import {
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 
 const router = Router();
-router.route("/hello").get((req, res) => {
-  res.send("Hi");
-});
+
 router.route("/approve/:id").patch(approval);
 router.route("/save/:type").post(verifyJWT, saveLetter);
 router.route("/sendMail").post(verifyJWT, sendEmail);

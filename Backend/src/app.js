@@ -3,13 +3,9 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import userRouter from "./routes/user.route.js";
 import letterRouter from "./routes/letter.route.js";
+import { ApiError } from "./Utils/ApiError.js";
 
 const app = express();
-
-// Middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser());
 
 // CORS configuration
 const corsOptions = {
@@ -20,11 +16,14 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
+// Middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
+
 // Routes
 app.use("/user", userRouter);
 app.use("/letter", letterRouter);
-
-import { ApiError } from "./utils/ApiError.js";
 
 // Error-handling middleware
 app.use((err, req, res, next) => {
@@ -37,11 +36,13 @@ app.use((err, req, res, next) => {
       data: err.data,
     });
   }
+  
   // For unexpected errors, use a generic error response
   return res.status(500).json({
     success: false,
-    message: err._message ? err._message : "Internal Server Error",
+    message: err.message || "Internal Server Error", // Use err.message or fallback
   });
 });
+
 
 export { app };
