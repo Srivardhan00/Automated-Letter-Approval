@@ -7,6 +7,7 @@ import axios from "axios";
 import { ToastContainer, toast, Bounce } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
+// Validation schema
 const validationSchema = Yup.object().shape({
   firstName: Yup.string()
     .matches(/^[A-Za-z]+$/, "Only alphabets are allowed")
@@ -17,8 +18,8 @@ const validationSchema = Yup.object().shape({
     .min(4, "Last Name must be at least 4 characters")
     .required("Last Name is required"),
   username: Yup.string()
-    .matches(/^[A-Za-z0-9]+$/, "alphabets and digits only")
-    .min(4, "username must be at least 4 characters")
+    .matches(/^[A-Za-z0-9]+$/, "Alphabets and digits only")
+    .min(4, "Username must be at least 4 characters")
     .required("Username is required"),
   rollNum: Yup.string()
     .matches(/^\d{4}[15]A[A-Za-z0-9]{4}$/, "Invalid roll number format")
@@ -52,7 +53,6 @@ export default function SignUp() {
   }, [rollNum, setValue]);
 
   const onSubmit = async (data) => {
-    console.log(data);
     try {
       const response = await axios.post(
         "http://localhost:8000/user/register",
@@ -65,105 +65,164 @@ export default function SignUp() {
         }
       );
 
-      console.log("Register successful:", response.data);
-      toast.success("Register Successful", {
-        position: "top-center",
-        autoClose: 5000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "dark",
-        transition: Bounce,
-      });
-      navigate("/home");
+      // Registration successful
+      toast.success("Registration Successful");
+      navigate("/home"); // Redirect to home or a success page after registration
     } catch (error) {
-      console.error("Register failed:", error);
-      if (error.response) {
-        console.error("Error data:", error.response.data);
-        toast.error(error.response.data, {
-          position: "top-center",
-          autoClose: 5000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-          theme: "dark",
-          transition: Bounce,
-        });
+      // Error handling for registration
+      if (
+        error.response &&
+        error.response.data &&
+        error.response.data.message
+      ) {
+        // Specific error message from server (like "Email already in use")
+        toast.error(error.response.data.message);
+      } else {
+        // Generic error message if no specific message is provided
+        toast.error("An unexpected error occurred during registration");
       }
     }
   };
 
   return (
-    <div className="container">
-      <h1>Sign Up</h1>
-      <form onSubmit={handleSubmit(onSubmit)}>
-        <div className="form-group">
-          <label htmlFor="firstName">First Name</label>
-          <input
-            id="firstName"
-            {...register("firstName")}
-            className={`form-control ${errors.firstName ? "is-invalid" : ""}`}
-          />
-          <div className="invalid-feedback">{errors.firstName?.message}</div>
-        </div>
-        <div className="form-group">
-          <label htmlFor="lastName">Last Name</label>
-          <input
-            id="lastName"
-            {...register("lastName")}
-            className={`form-control ${errors.lastName ? "is-invalid" : ""}`}
-          />
-          <div className="invalid-feedback">{errors.lastName?.message}</div>
-        </div>
-        <div className="form-group">
-          <label htmlFor="username">Username</label>
-          <input
-            id="username"
-            {...register("username")}
-            className={`form-control ${errors.username ? "is-invalid" : ""}`}
-          />
-          <div className="invalid-feedback">{errors.username?.message}</div>
-        </div>
-        <div className="form-group">
-          <label htmlFor="rollNum">Roll Number</label>
-          <input
-            id="rollNum"
-            {...register("rollNum")}
-            className={`form-control ${errors.rollNum ? "is-invalid" : ""}`}
-          />
-          <div className="invalid-feedback">{errors.rollNum?.message}</div>
-        </div>
-        <div className="form-group">
-          <label htmlFor="email">Email Address</label>
-          <input
-            id="email"
-            {...register("email")}
-            className={`form-control ${errors.email ? "is-invalid" : ""}`}
-            readOnly
-          />
-          <div className="invalid-feedback">{errors.email?.message}</div>
-        </div>
-        <div className="form-group">
-          <label htmlFor="password">Password</label>
-          <input
-            id="password"
-            type="password"
-            {...register("password")}
-            className={`form-control ${errors.password ? "is-invalid" : ""}`}
-          />
-          <div className="invalid-feedback">{errors.password?.message}</div>
-        </div>
-        <button type="submit" className="btn btn-primary" disabled={!isValid}>
-          Sign Up
-        </button>
-        <div className="form-group">
-          <Link to="/login">Already have an account? Sign in</Link>
-        </div>
-      </form>
+    <div className="min-h-screen flex items-center justify-center bg-gray-100">
+      <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
+        <h1 className="text-2xl font-bold text-gray-800 mb-4">Sign Up</h1>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          {/** First Name */}
+          <div>
+            <label
+              htmlFor="firstName"
+              className="block text-sm font-medium text-gray-600"
+            >
+              First Name
+            </label>
+            <input
+              id="firstName"
+              {...register("firstName")}
+              className={`w-full px-4 py-2 border rounded-lg focus:outline-none ${
+                errors.firstName ? "border-red-500" : "border-gray-300"
+              }`}
+            />
+            <p className="text-red-500 text-xs mt-1">
+              {errors.firstName?.message}
+            </p>
+          </div>
+
+          {/** Last Name */}
+          <div>
+            <label
+              htmlFor="lastName"
+              className="block text-sm font-medium text-gray-600"
+            >
+              Last Name
+            </label>
+            <input
+              id="lastName"
+              {...register("lastName")}
+              className={`w-full px-4 py-2 border rounded-lg focus:outline-none ${
+                errors.lastName ? "border-red-500" : "border-gray-300"
+              }`}
+            />
+            <p className="text-red-500 text-xs mt-1">
+              {errors.lastName?.message}
+            </p>
+          </div>
+
+          {/** Username */}
+          <div>
+            <label
+              htmlFor="username"
+              className="block text-sm font-medium text-gray-600"
+            >
+              Username
+            </label>
+            <input
+              id="username"
+              {...register("username")}
+              className={`w-full px-4 py-2 border rounded-lg focus:outline-none ${
+                errors.username ? "border-red-500" : "border-gray-300"
+              }`}
+            />
+            <p className="text-red-500 text-xs mt-1">
+              {errors.username?.message}
+            </p>
+          </div>
+
+          {/** Roll Number */}
+          <div>
+            <label
+              htmlFor="rollNum"
+              className="block text-sm font-medium text-gray-600"
+            >
+              Roll Number
+            </label>
+            <input
+              id="rollNum"
+              {...register("rollNum")}
+              className={`w-full px-4 py-2 border rounded-lg focus:outline-none ${
+                errors.rollNum ? "border-red-500" : "border-gray-300"
+              }`}
+            />
+            <p className="text-red-500 text-xs mt-1">
+              {errors.rollNum?.message}
+            </p>
+          </div>
+
+          {/** Email */}
+          <div>
+            <label
+              htmlFor="email"
+              className="block text-sm font-medium text-gray-600"
+            >
+              Email Address
+            </label>
+            <input
+              id="email"
+              {...register("email")}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100"
+              readOnly
+            />
+          </div>
+
+          {/** Password */}
+          <div>
+            <label
+              htmlFor="password"
+              className="block text-sm font-medium text-gray-600"
+            >
+              Password
+            </label>
+            <input
+              id="password"
+              type="password"
+              {...register("password")}
+              className={`w-full px-4 py-2 border rounded-lg focus:outline-none ${
+                errors.password ? "border-red-500" : "border-gray-300"
+              }`}
+            />
+            <p className="text-red-500 text-xs mt-1">
+              {errors.password?.message}
+            </p>
+          </div>
+
+          {/** Submit Button */}
+          <button
+            type="submit"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-lg transition duration-200"
+            disabled={!isValid}
+          >
+            Sign Up
+          </button>
+
+          {/** Link to Login */}
+          <div className="text-center mt-4">
+            <Link to="/login" className="text-blue-600 hover:underline">
+              Already have an account? Sign in
+            </Link>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }
