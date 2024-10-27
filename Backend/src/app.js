@@ -13,7 +13,7 @@ app.use(cookieParser());
 
 // CORS configuration
 const corsOptions = {
-  origin:  `${process.env.FRONTEND_PATH}`, // specify the frontend URL
+  origin: `${process.env.FRONTEND_PATH}`, // specify the frontend URL
   methods: ["GET", "POST", "PUT", "DELETE"], // specify allowed methods
   allowedHeaders: ["Content-Type", "Authorization"], // specify allowed headers
   credentials: true, // allow cookies and other credentials
@@ -40,7 +40,7 @@ app.use((err, req, res, next) => {
   // For unexpected errors, use a generic error response
   return res.status(500).json({
     success: false,
-    message: "Internal Server khdsbkfbksk",
+    message: err._message ? err._message : "Internal Server Error",
   });
 });
 

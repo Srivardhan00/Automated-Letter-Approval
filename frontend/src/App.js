@@ -12,10 +12,12 @@ import ConductEvent from "./forms/ConductEvent";
 import History from "./pages/History";
 import Error from "./pages/Error";
 import Status from "./pages/Status";
+import { ToastContainer } from "react-toastify";
 function App() {
   return (
     <div>
       <BrowserRouter>
+      <ToastContainer />
         <Routes>
           <Route path="/" element={<Mainpage />} />
           <Route path="/login" element={<SignIn />} />

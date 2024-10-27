@@ -164,7 +164,6 @@ export default function SignUp() {
           <Link to="/login">Already have an account? Sign in</Link>
         </div>
       </form>
-      <ToastContainer />
     </div>
   );
 }

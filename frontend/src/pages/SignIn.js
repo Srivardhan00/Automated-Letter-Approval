@@ -12,7 +12,7 @@ import {
   Avatar,
 } from "@mui/material";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
-import { ToastContainer, toast, Bounce } from "react-toastify";
+import {toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useNavigate } from "react-router-dom";
 
@@ -40,27 +40,24 @@ export default function SignIn() {
 
   const onSubmit = async (data) => {
     try {
-      const response = await axios.post('http://localhost:8000/user/login', data);
-      console.log('Login successful:', response.data);
-      toast.success('Login Successful');
-      navigate('/home');
+      const response = await axios.post(
+        "http://localhost:8000/user/login",
+        data
+      );
+      navigate("/home");
+      toast.success("Login Successful");
     } catch (error) {
-      console.error('Login failed:', error);
       if (error.response && error.response.data) {
-        console.error('Error response:', error.response.data);
-        const errorMessage = error.response.data.message || 'Login failed';
+        const errorMessage = error.response.data.message || "Login failed";
         toast.error(errorMessage);
       } else {
-        console.error('Other error:', error.message);
-        toast.error('Unexpected error occurred');
+        toast.error("Unexpected error occurred");
       }
     }
   };
-  
 
   return (
     <Grid container component="main" sx={{ height: "100vh" }}>
-      <ToastContainer />
       <Grid
         item
         xs={false}
