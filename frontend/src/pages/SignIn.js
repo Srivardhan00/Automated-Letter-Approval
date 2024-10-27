@@ -12,7 +12,7 @@ import {
   Avatar,
 } from "@mui/material";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
-import {toast } from "react-toastify";
+import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useNavigate } from "react-router-dom";
 
@@ -42,7 +42,8 @@ export default function SignIn() {
     try {
       const response = await axios.post(
         "http://localhost:8000/user/login",
-        data
+        data,
+        { withCredentials: true }
       );
       navigate("/home");
       toast.success("Login Successful");

@@ -35,19 +35,6 @@ export default function History() {
     fetchHistory();
   }, []); // Empty dependency array means it runs once when the component mounts
 
-  // Simulate a backend response for updating the status of pending letters
-  React.useEffect(() => {
-    const interval = setInterval(() => {
-      setHistory((prevHistory) => {
-        const updatedHistory = prevHistory.map((item) =>
-          item.status === "pending" ? { ...item, status: "approved" } : item
-        );
-        return updatedHistory;
-      });
-    }, 5000);
-    return () => clearInterval(interval);
-  }, []);
-
   return (
     <>
       <Header />
@@ -62,7 +49,12 @@ export default function History() {
           minHeight: "100vh",
         }}
       >
-        {history?.map((item) => (
+        {history?.data?.length === 0 && (
+          <p className="font-semibold text-3xl text-red-800">
+            {history.message}
+          </p>
+        )}
+        {history.data?.map((item) => (
           <Card
             key={item.id} // Ensure each key is unique
             sx={{
@@ -111,9 +103,6 @@ export default function History() {
             )}
           </Card>
         ))}
-        <Button variant="contained" sx={{ marginTop: 2 }}>
-          Load More
-        </Button>
       </Box>
     </>
   );

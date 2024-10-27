@@ -7,8 +7,17 @@ import Button from "@mui/material/Button";
 import HomeIcon from "@mui/icons-material/Home";
 import HistoryIcon from "@mui/icons-material/History";
 import LogoutIcon from "@mui/icons-material/Logout";
+import axios from "axios";
 
 export default function Header() {
+  const logoutUser = async () => {
+    axios.post(
+      "http://localhost:8000/user/logout",
+      {},
+      { withCredentials: true }
+    );
+  };
+
   return (
     <Box sx={{ flexGrow: 1 }}>
       <AppBar
@@ -63,6 +72,7 @@ export default function Header() {
                   backgroundColor: "#616161",
                 },
               }}
+              onClick={logoutUser}
             >
               Logout
             </Button>
