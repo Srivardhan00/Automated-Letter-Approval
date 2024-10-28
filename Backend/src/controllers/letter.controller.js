@@ -8,6 +8,7 @@ import { Event } from "../models/event.js";
 import generatePDFAndSaveToFile from "../utils/generatePdf.js";
 import sendMail from "../utils/sendEmail.js";
 import generateQR from "../utils/generateQR.js";
+import mongoose from "mongoose";
 
 const saveLetter = asyncHandler(async (req, res) => {
   const { type } = req.params;
@@ -96,7 +97,6 @@ const getHistory = asyncHandler(async (req, res) => {
     if (letters.length === 0) {
       return res.status(200).json(new ApiResponse(200, [], "No History Found"));
     }
-    console.log("sent");
 
     res
       .status(200)
@@ -163,36 +163,33 @@ const sendEmail = asyncHandler(async (req, res) => {
 // sName,rollNum,branch,letter,reason,letterLink,approveLink
 
 const approval = asyncHandler(async (req, res) => {
-  const { letterId } = req.params;
+  const letterId = req.params.id;
 
-  try {
-    const letter = await Letter.findById(letterId);
-
-    if (!letter) {
-      return res.status(400).json(new ApiError(400, "Invalid Letter Id"));
-    }
-
-    const approved = req.body.approved; // Assuming you expect an 'approved' boolean in the request body
-
-    if (!approved) {
-      letter.status = "rejected";
-      await letter.save({ validateBeforeSave: false });
-      res
-        .status(200)
-        .json(new ApiResponse(200, letter, "Successfully Rejected"));
-    }
-
-    generateQR("http://localhost:6000/letter/:id");
-
-    const uploadedQR = uploadOnCloudinary("qr.png");
-
-    res
-      .status(200)
-      .json(new ApiResponse(200, letter, "Letter status updated successfully"));
-  } catch (error) {
-    console.error("Error updating letter status:", error);
-    res.status(500).json(new ApiError(500, "Internal Server Error"));
+  const letter = await Letter.findOne(
+    // mongoose.Types.ObjectId.createFromTime(letterId)
+    { _id: letterId }
+  );
+  console.log(letter);
+  
+  if (!letter) {
+    throw new ApiError(500, "Invalid letter id");
   }
+
+  const approved = req.body.approved; // Assuming you expect an 'approved' boolean in the request body
+
+  if (!approved) {
+    letter.status = "rejected";
+    await letter.save({ validateBeforeSave: false });
+    res.status(200).json(new ApiResponse(200, letter, "Successfully Rejected"));
+  }
+
+  generateQR("http://localhost:6000/letter/:id");
+
+  const uploadedQR = uploadOnCloudinary("qr.png");
+
+  res
+    .status(200)
+    .json(new ApiResponse(200, letter, "Letter status updated successfully"));
 });
 
 export { saveLetter, getHistory, sendEmail, approval };
