@@ -169,23 +169,18 @@ const approval = asyncHandler(async (req, res) => {
     // mongoose.Types.ObjectId.createFromTime(letterId)
     { _id: letterId }
   );
-  console.log(letter);
-  
+
   if (!letter) {
     throw new ApiError(500, "Invalid letter id");
   }
 
-  const approved = req.body.approved; // Assuming you expect an 'approved' boolean in the request body
+  const approved = req.body.approve; // Assuming you expect an 'approved' boolean in the request body
 
   if (!approved) {
     letter.status = "rejected";
     await letter.save({ validateBeforeSave: false });
     res.status(200).json(new ApiResponse(200, letter, "Successfully Rejected"));
   }
-
-  generateQR("http://localhost:6000/letter/:id");
-
-  const uploadedQR = uploadOnCloudinary("qr.png");
 
   res
     .status(200)
