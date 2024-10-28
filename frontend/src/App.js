@@ -30,7 +30,7 @@ function App() {
           <Route path="/homepass" element={<Homepass />} />
           <Route path="/to-conduct-event" element={<ConductEvent />} />
           <Route path="/history" element={<History />} />
-          <Route path="/status" element={<Status />} />
+          <Route path="/status/:id" element={<Status />} />
           <Route path="*" element={<Error />} />
         </Routes>
       </BrowserRouter>

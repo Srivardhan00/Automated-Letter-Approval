@@ -1,58 +1,67 @@
 import * as React from "react";
-import Button from "@mui/material/Button";
-import Dialog from "@mui/material/Dialog";
-import DialogActions from "@mui/material/DialogActions";
-import Slide from "@mui/material/Slide";
-import Box from "@mui/material/Box";
-
-const Transition = React.forwardRef(function Transition(props, ref) {
-  return <Slide direction="up" ref={ref} {...props} />;
-});
+import axios from "axios";
+import { toast } from "react-toastify";
+import { useParams } from "react-router-dom";
 
 export default function Status() {
-  const [open, setOpen] = React.useState(false);
+  const { id } = useParams();
 
-  const handleClickOpen = () => {
-    setOpen(true);
+  const handleApprove = async () => {
+    try {
+      const response = await axios.post(
+        `http://localhost:8000/letter/approve/${id}`,
+        {
+          approve: true,
+        },
+        { withCredentials: true }
+      );
+      toast.success("Approved Successfully");
+    } catch (error) {
+      if (error.response && error.response.data) {
+        const errorMessage = error.response.data.message || "Unable to Approve letter";
+        toast.error(errorMessage);
+      } else {
+        toast.error("Unexpected error occurred");
+      }
+    }
   };
 
-  const handleClose = () => {
-    setOpen(false);
+  const handleReject = async () => {
+    try {
+      const response = await axios.post(
+        `http://localhost:8000/letter/approve/${id}`,
+        {
+          approve: false,
+        },
+        { withCredentials: true }
+      );
+      toast.success("Rejected Successfully");
+    } catch (error) {
+      if (error.response && error.response.data) {
+        const errorMessage = error.response.data.message || "Unable to Reject letter";
+        toast.error(errorMessage);
+      } else {
+        toast.error("Unexpected error occurred");
+      }
+    }
   };
 
   return (
-    <React.Fragment>
-      <Box display="flex" justifyContent="center" mt={40}>
-        <Button variant="contained" onClick={handleClickOpen}>
-          LETTER STATUS
-        </Button>
-      </Box>
-      <Dialog
-        open={open}
-        TransitionComponent={Transition}
-        onClose={handleClose}
-        aria-describedby="alert-dialog-slide-description"
-        maxWidth="sm"
-      >
-        <DialogActions
-          style={{ justifyContent: "center", gap: "100px", margin: "100px" }}
+    <div className="flex justify-center items-center h-screen">
+      <div className="space-y-4">
+        <button
+          onClick={handleApprove}
+          className="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg w-full max-w-xs transition-all"
         >
-          <Button
-            variant="contained"
-            onClick={handleClose}
-            style={{ backgroundColor: "green" }}
-          >
-            APPROVE
-          </Button>
-          <Button
-            variant="contained"
-            onClick={handleClose}
-            style={{ backgroundColor: "red" }}
-          >
-            REJECT
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </React.Fragment>
+          APPROVE
+        </button>
+        <button
+          onClick={handleReject}
+          className="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg w-full max-w-xs transition-all"
+        >
+          REJECT
+        </button>
+      </div>
+    </div>
   );
 }
