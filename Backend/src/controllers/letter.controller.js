@@ -9,6 +9,7 @@ import generatePDFAndSaveToFile from "../utils/generatePdf.js";
 import sendMail from "../utils/sendEmail.js";
 import generateQR from "../utils/generateQR.js";
 import mongoose from "mongoose";
+import { User } from "../Models/user.model.js";
 
 const saveLetter = asyncHandler(async (req, res) => {
   const { type } = req.params;
@@ -165,26 +166,56 @@ const sendEmail = asyncHandler(async (req, res) => {
 const approval = asyncHandler(async (req, res) => {
   const letterId = req.params.id;
 
-  const letter = await Letter.findOne(
-    // mongoose.Types.ObjectId.createFromTime(letterId)
-    { _id: letterId }
-  );
+  const letter = await Letter.findOne({ _id: letterId });
 
   if (!letter) {
-    throw new ApiError(500, "Invalid letter id");
+    throw new ApiError(500, "Invalid letter");
   }
 
-  const approved = req.body.approve; // Assuming you expect an 'approved' boolean in the request body
+  const approved = req.body.approve; // Assuming you expect an 'approve' boolean in the request body
 
   if (!approved) {
     letter.status = "rejected";
     await letter.save({ validateBeforeSave: false });
-    res.status(200).json(new ApiResponse(200, letter, "Successfully Rejected"));
+    return res
+      .status(200)
+      .json(new ApiResponse(200, letter, "Successfully Rejected"));
+  } else {
+    // If 'approved' is true, proceed to update the status and send response
+    letter.status = "approved";
+    await letter.save({ validateBeforeSave: false });
+    return res
+      .status(200)
+      .json(new ApiResponse(200, letter, "Letter status updated successfully"));
   }
-
-  res
-    .status(200)
-    .json(new ApiResponse(200, letter, "Letter status updated successfully"));
 });
 
-export { saveLetter, getHistory, sendEmail, approval };
+const showLetter = asyncHandler(async (req, res) => {
+  const letterId = req.params.id;
+
+  const letter = await Letter.findOne({ _id: letterId });
+  if (!letter) {
+    throw new ApiError(400, "Invalid Link");
+  }
+  const student = await User.findOne({
+    _id: new mongoose.Types.ObjectId(letter.userId),
+  }).select("-password -refreshToken");
+
+  const data = {
+    rollNum: student.rollNum,
+    email: student.email,
+    name: student.firstName + " " + student.lastName,
+    branch: student.branch,
+    isApproved: letter.isApproved,
+    facultyEmail: letter.facultyEmail,
+    yearOfStudy: letter.yearOfStudy,
+    reason: letter.reason,
+    date: letter.date,
+    status: letter.status,
+    approvedAt: letter.approvedAt,
+    letterLinkApproved: letter.letterLinkApproved,
+  };
+  res.send(new ApiResponse(200, data, "Outpass fetched successfully"));
+});
+
+export { saveLetter, getHistory, sendEmail, approval, showLetter };
