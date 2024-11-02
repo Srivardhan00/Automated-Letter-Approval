@@ -10,6 +10,9 @@ import sendMail from "../utils/sendEmail.js";
 import generateQR from "../utils/generateQR.js";
 import mongoose from "mongoose";
 import { User } from "../Models/user.model.js";
+import { formatDateTime } from "../utils/formatDateTime.js";
+import axios from "axios";
+import fs from "fs";
 
 const saveLetter = asyncHandler(async (req, res) => {
   const { type } = req.params;
@@ -18,7 +21,6 @@ const saveLetter = asyncHandler(async (req, res) => {
   let user = req.user;
   let apiKey, apiUrl, requestData, uploadedRes;
   const filePath = "mypdf.pdf";
-  // console.log(req.user);
   switch (type) {
     case "outpass":
       const outpass = new Outpass(data);
@@ -43,7 +45,6 @@ const saveLetter = asyncHandler(async (req, res) => {
         throw new ApiError(500, "Uploading to cloud was failed");
       }
       break;
-    // console.log(uploadedRes);
     case "event":
       const event = new Event(data);
       result = await event.save();
@@ -71,7 +72,7 @@ const saveLetter = asyncHandler(async (req, res) => {
       }
       break;
     default:
-      return res.status(400).json({ error: `Invalid letter type: ${type}` });
+      throw new ApiError(400, `Invalid letter type: ${type}`);
   }
   const letter = await Letter.create({
     userId: user._id,
@@ -82,7 +83,7 @@ const saveLetter = asyncHandler(async (req, res) => {
   });
   createdLetter = await Letter.findById(letter._id);
   if (!createdLetter) {
-    res.status(500).json(new ApiError(500, "Error while saving into DB"));
+    throw new ApiError(500, "Error while saving into DB");
   }
   res
     .status(200)
@@ -103,10 +104,7 @@ const getHistory = asyncHandler(async (req, res) => {
       .status(200)
       .json(new ApiResponse(200, letters, "History Fetched Successfully"));
   } catch (error) {
-    console.error("Error fetching history:", error);
-    res
-      .status(500)
-      .json(new ApiError(500, "An error occurred while fetching history"));
+    throw new ApiError(500, "An error occurred while fetching history");
   }
 });
 
@@ -118,11 +116,11 @@ const sendEmail = asyncHandler(async (req, res) => {
     // Find the letter by ID
     const letterBef = await Letter.findById(letter._id);
     if (!letterBef) {
-      return res.status(400).json(new ApiError(400, "Invalid Letter"));
+      throw new ApiError(400, "Invalid Letter");
     }
 
     if (letterBef.status !== "notUsed") {
-      return res.status(400).json(new ApiError(400, "Letter was already Used"));
+      throw new ApiError(400, "Letter was already Used");
     }
 
     // Update and save the letter (assuming letterBef is a mongoose document)
@@ -140,7 +138,7 @@ const sendEmail = asyncHandler(async (req, res) => {
         branch: user.branch,
         letter: letter.typeOfLetter,
         letterLink: letter.letterLinkEmpty,
-        approveLink: `https://localhost:6000/approve/${letter._id}`,
+        approveLink: `https://localhost:3000/status/${letter._id}`,
         email: user.email,
       },
       facultyMail
@@ -157,11 +155,9 @@ const sendEmail = asyncHandler(async (req, res) => {
       .json(new ApiResponse(200, letter, "Mail Sent Successfully"));
   } catch (error) {
     console.error("Error sending email:", error);
-    res.status(500).json(new ApiError(500, "Internal Server Error"));
+    throw new ApiError(500, "Internal Server Error");
   }
 });
-
-// sName,rollNum,branch,letter,reason,letterLink,approveLink
 
 const approval = asyncHandler(async (req, res) => {
   const letterId = req.params.id;
@@ -181,12 +177,74 @@ const approval = asyncHandler(async (req, res) => {
       .status(200)
       .json(new ApiResponse(200, letter, "Successfully Rejected"));
   } else {
-    // If 'approved' is true, proceed to update the status and send response
+    const user = await User.findOne({
+      _id: new mongoose.Types.ObjectId(letter.userId),
+    });
+
+    // Generate QR code
+    generateQR(`http://localhost:3000/view/${letter._id}`);
+
+    // Upload QR code to Cloudinary
+    const qrResponse = await uploadOnCloudinary("qr.png");
+
+    // Mark the letter as approved
+    letter.isApproved = true;
     letter.status = "approved";
-    await letter.save({ validateBeforeSave: false });
-    return res
-      .status(200)
-      .json(new ApiResponse(200, letter, "Letter status updated successfully"));
+    letter.approvedAt = String(formatDateTime(new Date()));
+    
+    // Prepare data for PDF generation
+    const data = {
+      data: {
+        date: letter.date,
+        name: user.firstName + " " + user.lastName,
+        qrCode: qrResponse.url, // QR Code URL from Cloudinary
+        reason: letter.reason,
+        approvedAt: letter.approvedAt,
+        approvedBy: letter.facultyEmail,
+        department: user.branch,
+        rollNumber: user.rollNum,
+        yearOfStudy: letter.yearOfStudy,
+      },
+    };
+
+    // Step 1: Generate the PDF and save it locally
+    try {
+      const pdfResponse = await axios({
+        method: "post",
+        url: "https://pdfgen.app/api/generate?templateId=63a5d10",
+        headers: {
+          "Content-Type": "application/json",
+          api_key: process.env.OUTPASS_API_KEY,
+        },
+        responseType: "stream",
+        data: data,
+      });
+
+      // Step 2: Save the PDF to the filesystem
+      await new Promise((resolve, reject) => {
+        const writeStream = fs.createWriteStream("mypdf.pdf");
+        pdfResponse.data.pipe(writeStream);
+
+        writeStream.on("finish", resolve);
+        writeStream.on("error", reject);
+      });
+
+      // Step 3: Upload the saved PDF to Cloudinary
+      const pdfUploadResponse = await uploadOnCloudinary("mypdf.pdf");
+
+      // Update the letter record with the generated PDF link
+      letter.letterLinkApproved = pdfUploadResponse.url;
+      // Save the updated letter
+      await letter.save({ validateBeforeSave: false });
+
+      return res
+        .status(200)
+        .json(
+          new ApiResponse(200, letter, "Letter status updated successfully")
+        );
+    } catch (err) {
+      throw new ApiError(500, err);
+    }
   }
 });
 
