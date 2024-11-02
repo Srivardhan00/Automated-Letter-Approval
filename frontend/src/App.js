@@ -13,11 +13,12 @@ import History from "./pages/History";
 import Error from "./pages/Error";
 import Status from "./pages/Status";
 import { ToastContainer } from "react-toastify";
+import View from "./pages/View";
 function App() {
   return (
     <div>
       <BrowserRouter>
-      <ToastContainer />
+        <ToastContainer />
         <Routes>
           <Route path="/" element={<Mainpage />} />
           <Route path="/login" element={<SignIn />} />
@@ -31,6 +32,7 @@ function App() {
           <Route path="/to-conduct-event" element={<ConductEvent />} />
           <Route path="/history" element={<History />} />
           <Route path="/status/:id" element={<Status />} />
+          <Route path="/view/:id" element={<View />} />{" "}
           <Route path="*" element={<Error />} />
         </Routes>
       </BrowserRouter>

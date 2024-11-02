@@ -29,7 +29,7 @@ export default function Header() {
       >
         <Toolbar>
           <Box sx={{ display: "flex", alignItems: "center", flexGrow: 1 }}>
-            <Link to="/status" variant="body2">
+            <Link to="/home" variant="body2">
               <Button
                 startIcon={<HomeIcon />}
                 color="inherit"
