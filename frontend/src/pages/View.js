@@ -9,7 +9,7 @@ export default function View() {
 
   const fetchInfo = async () => {
     try {
-      const response = await axios.post(
+      const response = await axios.get(
         `http://localhost:8000/letter/view/${id}`
       );
       setLetterData(response.data.data); // Extract and store the data part of the response
@@ -55,9 +55,7 @@ export default function View() {
             </p>
             <p className="text-lg font-semibold text-gray-700 mb-4">
               Faculty Email:{" "}
-              <span className="font-normal">
-                {letterData.facultyEmail || ""}
-              </span>
+              <span className="font-normal">{letterData.approvedBy || ""}</span>
             </p>
             <p className="text-lg font-semibold text-gray-700 mb-4">
               Reason:{" "}
@@ -88,11 +86,9 @@ export default function View() {
               Approved At:{" "}
               <span className="font-normal">{letterData.approvedAt || ""}</span>
             </p>
-            <p className="text-lg font-semibold text-gray-700 mb-4">
-              Letter Link Approved:{" "}
-              <span className="font-normal">
-                {letterData.letterLinkApproved || ""}
-              </span>
+            <p className="text-lg font-semibold text-blue-900 mb-4">
+              Letter Link Approved:
+              <a href={letterData.letterLinkApproved}>OPEN</a>
             </p>
           </div>
         ) : (

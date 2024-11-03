@@ -9,7 +9,7 @@ export default function Status() {
 
   const fetchInfo = async () => {
     try {
-      const response = await axios.post(
+      const response = await axios.get(
         `http://localhost:8000/letter/view/${id}`
       );
       setLetterData(response.data.data); // Extract and store the data part of the response
@@ -90,6 +90,23 @@ export default function Status() {
               Branch: <span className="font-normal">{letterData.branch}</span>
             </p>
             <p className="text-lg font-semibold text-gray-700 mb-4">
+              Year of Study:{" "}
+              <span className="font-normal">
+                {letterData.yearOfStudy || ""}
+              </span>
+            </p>
+            <p className="text-lg font-semibold text-gray-700 mb-4">
+              Faculty Email:{" "}
+              <span className="font-normal">{letterData.approvedBy || ""}</span>
+            </p>
+            <p className="text-lg font-semibold text-gray-700 mb-4">
+              Reason:{" "}
+              <span className="font-normal">{letterData.reason || ""}</span>
+            </p>
+            <p className="text-lg font-semibold text-gray-700 mb-4">
+              Date: <span className="font-normal">{letterData.date || ""}</span>
+            </p>
+            <p className="text-lg font-semibold text-gray-700 mb-4">
               Status:{" "}
               <span
                 className={`font-normal ${
@@ -98,7 +115,7 @@ export default function Status() {
                     : "text-red-600"
                 }`}
               >
-                {letterData.status}
+                {letterData.status || ""}
               </span>
             </p>
             <p className="text-lg font-semibold text-gray-700 mb-4">
@@ -106,6 +123,14 @@ export default function Status() {
               <span className="font-normal">
                 {letterData.isApproved ? "Yes" : "No"}
               </span>
+            </p>
+            <p className="text-lg font-semibold text-gray-700 mb-4">
+              Approved At:{" "}
+              <span className="font-normal">{letterData.approvedAt || ""}</span>
+            </p>
+            <p className="text-lg font-semibold text-blue-900 mb-4">
+              Letter Link Approved:
+              <a href={letterData.letterLinkApproved}>OPEN</a>
             </p>
           </div>
         ) : (
