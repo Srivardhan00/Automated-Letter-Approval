@@ -80,6 +80,7 @@ const saveLetter = asyncHandler(async (req, res) => {
         letterLinkEmpty: uploadedRes.url,
         reason: data.reason,
         yearOfStudy: data.yearOfStudy,
+        userId: user._id,
       },
       { new: true }
     );
@@ -142,7 +143,7 @@ const sendEmail = asyncHandler(async (req, res) => {
         branch: user.branch,
         letter: updatedLetter.typeOfLetter,
         letterLink: updatedLetter.letterLinkEmpty,
-        approveLink: `https://localhost:3000/status/${updatedLetter._id}`,
+        approveLink: `localhost:3000/status/${updatedLetter._id}`,
         email: user.email,
         reason: updatedLetter.reason,
         type: updatedLetter.type,
@@ -178,7 +179,7 @@ const approval = asyncHandler(async (req, res) => {
   if (letter.status !== "notUsed" && letter.status !== "pending") {
     throw new ApiError(400, "The letter was already used");
   }
-  if (!letter.facultyEmail) {
+  if (!letter.approvedBy) {
     throw new ApiError(400, "Invalid Faculty Mail");
   }
   const approved = req.body.approve; // Boolean indicating approval
@@ -206,7 +207,7 @@ const approval = asyncHandler(async (req, res) => {
         qrCode: qrResponse.url,
         reason: letter.reason,
         approvedAt: letter.approvedAt,
-        approvedBy: letter.facultyEmail,
+        approvedBy: letter.approvedBy,
         department: user.branch,
         rollNumber: user.rollNum,
         yearOfStudy: letter.yearOfStudy,
@@ -266,12 +267,12 @@ const showLetter = asyncHandler(async (req, res) => {
     name: student.firstName + " " + student.lastName,
     branch: student.branch,
     isApproved: letter.isApproved,
-    facultyEmail: letter.facultyEmail,
+    approvedBy: letter.approvedBy,
     yearOfStudy: letter.yearOfStudy,
     reason: letter.reason,
     date: letter.date,
     status: letter.status,
-    approvedAt: letter.approvedAt,
+    approvedAt: letter.updatedAt,
     letterLinkApproved: letter.letterLinkApproved,
   };
   res.send(new ApiResponse(200, data, "Outpass fetched successfully"));
