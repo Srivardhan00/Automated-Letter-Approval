@@ -14,6 +14,6 @@ router.route("/approve/:id").post(approval);
 router.route("/save/:type").post(verifyJWT, saveLetter);
 router.route("/sendMail").post(verifyJWT, sendEmail);
 router.route("/getHistory").get(verifyJWT, getHistory);
-router.route("/view/:id").post(showLetter);
+router.route("/view/:id").get(showLetter);
 
 export default router;

@@ -3,8 +3,6 @@ import { ApiError } from "../Utils/ApiError.js";
 import { Letter } from "../Models/letter.model.js";
 import { uploadOnCloudinary } from "../Utils/cloudinary.js";
 import { ApiResponse } from "../Utils/ApiResponse.js";
-import { Outpass } from "../models/outpass.model.js";
-import { Event } from "../models/event.js";
 import generatePDFAndSaveToFile from "../utils/generatePdf.js";
 import sendMail from "../utils/sendEmail.js";
 import generateQR from "../utils/generateQR.js";
@@ -15,79 +13,80 @@ import axios from "axios";
 import fs from "fs";
 
 const saveLetter = asyncHandler(async (req, res) => {
-  const { type } = req.params;
+  const { type } = req.params; // Letter type (e.g., 'outpass', 'event')
   const data = req.body;
-  let result, createdLetter;
-  let user = req.user;
-  let apiKey, apiUrl, requestData, uploadedRes;
+  let createdDocument, apiKey, apiUrl, requestData, uploadedRes;
   const filePath = "mypdf.pdf";
+  const user = req.user;
+  // Use discriminators to create specific instances based on the type
+  let LetterModel;
   switch (type) {
     case "outpass":
-      const outpass = new Outpass(data);
-      result = await outpass.save();
-      // Example usage:
+      LetterModel = mongoose.model("Outpass");
       apiUrl = "https://pdfgen.app/api/generate?templateId=bc43343";
       apiKey = "su1eciFshoWDAwXmeQtxJ";
       requestData = {
         data: {
-          date: outpass.date,
-          name: user.firstName + " " + user.lastName,
-          reason: outpass.reason,
+          date: formatDateTime(Date.now()),
+          name: `${user.firstName} ${user.lastName}`,
+          reason: data.reason,
           department: user.branch,
           rollNumber: user.rollNum,
-          yearOfStudy: outpass.yearOfStudy,
+          yearOfStudy: data.yearOfStudy,
         },
       };
-      await generatePDFAndSaveToFile(apiUrl, apiKey, requestData, filePath);
-      try {
-        uploadedRes = await uploadOnCloudinary(filePath);
-      } catch (error) {
-        throw new ApiError(500, "Uploading to cloud was failed");
-      }
       break;
     case "event":
-      const event = new Event(data);
-      result = await event.save();
-      // Example usage:
+      LetterModel = mongoose.model("Event");
       apiUrl = "https://pdfgen.app/api/generate?templateId=3538066";
       apiKey = "zgqRTbD2vxfr6zPdLad8";
       requestData = {
         data: {
-          dep: event.dep,
-          date: event.date,
-          event: event.event,
-          venue: event.venue,
-          detail: event.detail,
-          evedate: event.evedate,
-          subject: event.subject,
-          approvedBy: event.approvedBy,
-          additionalinfo: event.additionalinfo,
+          dep: data.dep,
+          date: data.date,
+          event: data.event,
+          venue: data.venue,
+          detail: data.detail,
+          evedate: data.evedate,
+          subject: data.subject,
+          approvedBy: data.approvedBy,
+          additionalinfo: data.additionalinfo,
         },
       };
-      await generatePDFAndSaveToFile(apiUrl, apiKey, requestData, filePath);
-      try {
-        uploadedRes = await uploadOnCloudinary(filePath);
-      } catch (error) {
-        throw new ApiError(500, "Uploading to cloud was failed");
-      }
       break;
     default:
       throw new ApiError(400, `Invalid letter type: ${type}`);
   }
-  const letter = await Letter.create({
+
+  // Save the specific letter document to the database
+  try {
+    const letterInstance = new LetterModel(data);
+    createdDocument = await letterInstance.save();
+  } catch (error) {
+    throw new ApiError(500, "Error saving letter to the database");
+  }
+  // Generate PDF and upload it
+  try {
+    await generatePDFAndSaveToFile(apiUrl, apiKey, requestData, filePath);
+    uploadedRes = await uploadOnCloudinary(filePath);
+  } catch (error) {
+    throw new ApiError(500, "PDF generation or upload failed");
+  }
+
+  // Create a reference in the main Letter model
+  const letterRecord = await Letter.create({
     userId: user._id,
     typeOfLetter: type,
-    thatTypeLetterId: result._id,
+    thatTypeLetterId: createdDocument._id,
     letterLinkEmpty: uploadedRes.url,
     status: "pending",
+    reason: data.reason,
+    yearOfStudy: data.yearOfStudy,
   });
-  createdLetter = await Letter.findById(letter._id);
-  if (!createdLetter) {
-    throw new ApiError(500, "Error while saving into DB");
-  }
+
   res
     .status(200)
-    .json(new ApiResponse(200, createdLetter, "Successfully saved"));
+    .json(new ApiResponse(200, letterRecord, "Successfully saved"));
 });
 
 const getHistory = asyncHandler(async (req, res) => {
@@ -162,13 +161,20 @@ const sendEmail = asyncHandler(async (req, res) => {
 const approval = asyncHandler(async (req, res) => {
   const letterId = req.params.id;
 
-  const letter = await Letter.findOne({ _id: letterId });
+  // Fetch the letter and its detailed type instance
+  const letter = await Letter.findById(new mongoose.Types.ObjectId(letterId));
 
   if (!letter) {
     throw new ApiError(500, "Invalid letter");
   }
-
-  const approved = req.body.approve; // Assuming you expect an 'approve' boolean in the request body
+  if (letter.status !== "notUsed" && letter.status !== "pending") {
+    throw new ApiError(400, "The letter was already used");
+  }
+  if (!letter.facultyEmail) {
+    throw new ApiError(400, "Invalid Faculty Mail");
+  }
+  const approved = req.body.approve; // Boolean indicating approval
+  const user = await User.findById(new mongoose.Types.ObjectId(letter.userId));
 
   if (!approved) {
     letter.status = "rejected";
@@ -177,27 +183,19 @@ const approval = asyncHandler(async (req, res) => {
       .status(200)
       .json(new ApiResponse(200, letter, "Successfully Rejected"));
   } else {
-    const user = await User.findOne({
-      _id: new mongoose.Types.ObjectId(letter.userId),
-    });
-
-    // Generate QR code
+    // Update letter as approved and generate a PDF with QR
     generateQR(`http://localhost:3000/view/${letter._id}`);
-
-    // Upload QR code to Cloudinary
     const qrResponse = await uploadOnCloudinary("qr.png");
 
-    // Mark the letter as approved
     letter.isApproved = true;
     letter.status = "approved";
-    letter.approvedAt = String(formatDateTime(new Date()));
-    
-    // Prepare data for PDF generation
-    const data = {
+    letter.approvedAt = formatDateTime(new Date());
+
+    const requestData = {
       data: {
         date: letter.date,
-        name: user.firstName + " " + user.lastName,
-        qrCode: qrResponse.url, // QR Code URL from Cloudinary
+        name: `${user.firstName} ${user.lastName}`,
+        qrCode: qrResponse.url,
         reason: letter.reason,
         approvedAt: letter.approvedAt,
         approvedBy: letter.facultyEmail,
@@ -207,37 +205,32 @@ const approval = asyncHandler(async (req, res) => {
       },
     };
 
-    // Step 1: Generate the PDF and save it locally
+    // PDF generation and saving
     try {
-      const pdfResponse = await axios({
-        method: "post",
-        url: "https://pdfgen.app/api/generate?templateId=63a5d10",
-        headers: {
-          "Content-Type": "application/json",
-          api_key: process.env.OUTPASS_API_KEY,
-        },
-        responseType: "stream",
-        data: data,
-      });
+      const pdfResponse = await axios.post(
+        "https://pdfgen.app/api/generate?templateId=63a5d10",
+        requestData,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            api_key: process.env.OUTPASS_API_KEY,
+          },
+          responseType: "stream",
+        }
+      );
 
-      // Step 2: Save the PDF to the filesystem
       await new Promise((resolve, reject) => {
         const writeStream = fs.createWriteStream("mypdf.pdf");
         pdfResponse.data.pipe(writeStream);
-
         writeStream.on("finish", resolve);
         writeStream.on("error", reject);
       });
 
-      // Step 3: Upload the saved PDF to Cloudinary
       const pdfUploadResponse = await uploadOnCloudinary("mypdf.pdf");
-
-      // Update the letter record with the generated PDF link
       letter.letterLinkApproved = pdfUploadResponse.url;
-      // Save the updated letter
       await letter.save({ validateBeforeSave: false });
 
-      return res
+      res
         .status(200)
         .json(
           new ApiResponse(200, letter, "Letter status updated successfully")
