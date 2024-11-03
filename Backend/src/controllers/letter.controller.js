@@ -57,10 +57,10 @@ const saveLetter = asyncHandler(async (req, res) => {
     default:
       throw new ApiError(400, `Invalid letter type: ${type}`);
   }
-
+  let letterInstance;
   // Save the specific letter document to the database
   try {
-    const letterInstance = new LetterModel(data);
+    letterInstance = new LetterModel(data);
     createdDocument = await letterInstance.save();
   } catch (error) {
     throw new ApiError(500, "Error saving letter to the database");
@@ -73,20 +73,22 @@ const saveLetter = asyncHandler(async (req, res) => {
     throw new ApiError(500, "PDF generation or upload failed");
   }
 
-  // Create a reference in the main Letter model
-  const letterRecord = await Letter.create({
-    userId: user._id,
-    typeOfLetter: type,
-    thatTypeLetterId: createdDocument._id,
-    letterLinkEmpty: uploadedRes.url,
-    status: "pending",
-    reason: data.reason,
-    yearOfStudy: data.yearOfStudy,
-  });
-
+  try {
+    createdDocument = await LetterModel.findByIdAndUpdate(
+      createdDocument._id,
+      {
+        letterLinkEmpty: uploadedRes.url,
+        reason: data.reason,
+        yearOfStudy: data.yearOfStudy,
+      },
+      { new: true }
+    );
+  } catch (error) {
+    throw new ApiError(500, "Error updating letter document with PDF link");
+  }
   res
     .status(200)
-    .json(new ApiResponse(200, letterRecord, "Successfully saved"));
+    .json(new ApiResponse(200, createdDocument, "Successfully saved"));
 });
 
 const getHistory = asyncHandler(async (req, res) => {
@@ -111,51 +113,57 @@ const sendEmail = asyncHandler(async (req, res) => {
   const user = req.user;
   const { facultyMail, letter } = req.body;
 
+  // Find the letter by ID
+  const letterBef = await Letter.findById(letter._id);
+  if (!letterBef) {
+    throw new ApiError(400, "Invalid Letter");
+  }
+  if (!facultyMail) {
+    throw new ApiError(400, "Faculty Mail is Missing");
+  }
+  // if (letterBef.status !== "notUsed") {
+  // throw new ApiError(400, "Letter was already Used");
+  // }
+
+  // Update and save the letter (assuming letterBef is a mongoose document)
+  // Make sure to handle validation errors by passing { validateBeforeSave: false }
+  const updatedLetter = await Letter.findOneAndUpdate(
+    { _id: letter._id },
+    { status: "pending", approvedBy: facultyMail },
+    { new: true, runValidators: true }
+  );
+
   try {
-    // Find the letter by ID
-    const letterBef = await Letter.findById(letter._id);
-    if (!letterBef) {
-      throw new ApiError(400, "Invalid Letter");
-    }
-
-    if (letterBef.status !== "notUsed") {
-      throw new ApiError(400, "Letter was already Used");
-    }
-
-    // Update and save the letter (assuming letterBef is a mongoose document)
-    // Make sure to handle validation errors by passing { validateBeforeSave: false }
-    letterBef.set({
-      status: "pending", // Update status or any other fields as needed
-    });
-    await letterBef.save({ validateBeforeSave: false });
-
-    // Call sendEmail function (assuming it's asynchronous and returns a promise)
+    // Call sendMail function (ensure it returns the expected format)
     const mailResponse = await sendMail(
       {
         sName: user.firstName + " " + user.lastName,
         rollNum: user.rollNum,
         branch: user.branch,
-        letter: letter.typeOfLetter,
-        letterLink: letter.letterLinkEmpty,
-        approveLink: `https://localhost:3000/status/${letter._id}`,
+        letter: updatedLetter.typeOfLetter,
+        letterLink: updatedLetter.letterLinkEmpty,
+        approveLink: `https://localhost:3000/status/${updatedLetter._id}`,
         email: user.email,
+        reason: updatedLetter.reason,
+        type: updatedLetter.type,
       },
       facultyMail
     );
 
-    // Check if facultyMail is in the accepted list of recipients
-    if (!mailResponse.accepted.includes(facultyMail)) {
-      return res.status(500).json(new ApiError(500, "Mail did not reach"));
-    }
+    console.log("Mail response received:", mailResponse);
 
-    // Respond with success if everything went well
-    res
-      .status(200)
-      .json(new ApiResponse(200, letter, "Mail Sent Successfully"));
+    if (mailResponse.rejected.length > 0) {
+      throw new ApiError(500, "Mail was rejected by the server");
+    }
   } catch (error) {
-    console.error("Error sending email:", error);
+    console.error("Error in sending email or validation:", error);
     throw new ApiError(500, "Internal Server Error");
   }
+
+  // Respond with success if everything went well
+  res
+    .status(200)
+    .json(new ApiResponse(200, updatedLetter, "Mail Sent Successfully"));
 });
 
 const approval = asyncHandler(async (req, res) => {
