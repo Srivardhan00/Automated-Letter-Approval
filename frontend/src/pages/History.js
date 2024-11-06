@@ -86,6 +86,7 @@ export default function History() {
                 sx={{
                   background: "linear-gradient(to right, #34e89e, #0f3443)",
                 }}
+                onClick={()=>window.open(item.letterLinkApproved)}
               >
                 Download
               </Button>

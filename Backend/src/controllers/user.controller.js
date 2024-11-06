@@ -36,7 +36,7 @@ const registerUser = asyncHandler(async (req, res) => {
     rollNum,
     firstName,
     lastName,
-    branch,
+    branch:'AIML',
   });
 
   const createdUser = await User.findById(user._id).select(

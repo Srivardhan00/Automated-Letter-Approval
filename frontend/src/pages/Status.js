@@ -125,13 +125,15 @@ export default function Status() {
               </span>
             </p>
             <p className="text-lg font-semibold text-gray-700 mb-4">
-              Approved At:{" "}
+              {(letterData.isApproved)?"Approved At": "Rejected At"}: 
               <span className="font-normal">{letterData.approvedAt || ""}</span>
             </p>
-            <p className="text-lg font-semibold text-blue-900 mb-4">
-              Letter Link Approved:
-              <a href={letterData.letterLinkApproved}>OPEN</a>
-            </p>
+            {letterData.isApproved && (
+              <p className="text-lg font-semibold text-blue-900 mb-4">
+                Letter Link Approved:
+                <a href={letterData.letterLinkApproved}>OPEN</a>
+              </p>
+            )}
           </div>
         ) : (
           <p className="text-gray-600">Loading data...</p>

@@ -19,25 +19,26 @@ async function main(studentInfo, facultyMail) {
       to: `${facultyMail}`, // List of receivers
       subject: "Letter Approval (System Generated)", // Subject line
       html: `
-        <html>
-          <body>
-            <h1>Letter Approval Notification</h1>
-            <p>Dear Sir/Madam,</p>
-            <p>The letter has been generated and is awaiting approval.</p>
-            <p>Please review the details below:</p>
-            <ul>
-              <li>Name: ${studentInfo.rollNum}</li>
-              <li>Branch: ${studentInfo.branch}</li>
-              <li>Letter Type: ${studentInfo.type}</li>
-              <li>Reason: ${studentInfo.reason}</li>
-              <li>Letter Link (for info): <a href="${studentInfo.letterLink}">View Letter</a></li>
-              <li>Approve Here: <a href="${studentInfo.approveLink}">Approve Letter</a></li>
-              <li>Student Email: ${studentInfo.email}</li>
-            </ul>
-            <p>If you have any questions, feel free to contact us.</p>
-            <p>Best regards,<br>Letter Approval Team</p>
-          </body>
-        </html>
+      <html>
+        <body>
+          <h1>Letter Approval Notification</h1>
+          <p>Dear Sir/Madam,</p>
+          <p>The letter has been generated and is awaiting approval.</p>
+          <p>Please review the details below:</p>
+          <ul>
+            <li>Name: ${studentInfo.sName}</li>
+            <li>Roll Number: ${studentInfo.rollNum}</li>
+            <li>Branch: ${studentInfo.branch}</li>
+            <li>Letter Type: ${studentInfo.type}</li>
+            <li>Reason: ${studentInfo.reason}</li>
+            <li>Letter Link (for info): <a href="${studentInfo.letterLink}" target="_blank">View Letter</a></li>
+            <li>Approve Here:${studentInfo.approveLink}</li>
+            <li>Student Email: ${studentInfo.email}</li>
+          </ul>
+          <p>If you have any questions, feel free to contact us.</p>
+          <p>Best regards,<br>Letter Approval Team</p>
+        </body>
+      </html>
       `,
     });
 
