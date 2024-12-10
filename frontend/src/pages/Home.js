@@ -10,27 +10,27 @@ import { Link } from "react-router-dom";
 
 const itemData = [
   {
-    img: "https://www.pdfslist.com/wp-content/uploads/2021/07/Gate-Pass-Format.png",
+    img: "/images/outpass.jpg",
     title: "Outpass",
     link: "/outpass",
   },
   {
-    img: "https://www.allbusinesstemplates.com/thumbs/73bebdff-8f02-4544-827e-2cdd8c451d56_1.png",
+    img: "/images/attendance.jpg",
     title: "Attendance",
     link: "/attendance",
   },
   {
-    img: "https://lh6.googleusercontent.com/proxy/_92um-b3lTmpwPk0IHsfOvU8Xw1Pu-bu0dDCkl84sIr8njOCCv9cm-BIGAcv_3wZaODkFJdIYAbVpGugHhPU7lkyHXp9AMJMsV1s8XrLfMyCDNJm1HBiQyZQ-QxWJ-4uR_8fuHHRgq1Matm_kQXSYF2dCUTU9_3Bd7SrGWKjQokR8l53G9iso9P8=s0-d",
+    img: "/images/internship.jpg",
     title: "LOC for Internship",
     link: "/internship",
   },
   {
-    img: "https://corpseeds.blob.core.windows.net/corpseed/BONAFIDE_CERTIFICATE_for_employee.PNG",
+    img: "/images/bonafide.jpg",
     title: "Bonafide",
     link: "/bonafide",
   },
   {
-    img: "https://tse2.mm.bing.net/th?id=OIP.2cs2aIovFxD1QyLXhksbHwHaE6&pid=Api&P=0&h=180",
+    img: "/images/outpass.jpg",
     title: "Homepass",
     link: "/homepass",
   },

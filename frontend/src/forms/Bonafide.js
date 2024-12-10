@@ -7,7 +7,6 @@ import Grid from "@mui/material/Grid";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import CardMedia from "@mui/material/CardMedia";
-import bonafide from "../images/bonafide.jpg";
 
 export default function Outpass() {
   const [formData, setFormData] = React.useState({
@@ -81,7 +80,7 @@ export default function Outpass() {
         >
           <CardMedia
             component="img"
-            image={bonafide}
+            image="/images/bonafide.jpg"
             title="Letter example image"
             sx={{ objectFit: "contain", margin: 0 }}
           />

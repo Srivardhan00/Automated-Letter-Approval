@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import outpass from "../images/outpass.jpg";
 import Header from "../components/Header";
 import { toast } from "react-toastify";
 import axios from "axios";
@@ -121,7 +120,7 @@ export default function Outpass() {
         <div className="flex-1 flex justify-center items-start">
           <div className="max-w-[80%] m-2 border border-black bg-purple-600">
             <img
-              src={outpass}
+              src="/images/internship.jpg"
               alt="Letter example"
               className="object-contain w-full h-auto"
             />

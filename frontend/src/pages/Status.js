@@ -3,6 +3,18 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import { useParams } from "react-router-dom";
 
+function formatDateTime(dateString) {
+  const date = new Date(dateString);
+  const options = {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  };
+  return date.toLocaleString("en-GB", options);
+}
 export default function Status() {
   const { id } = useParams();
   const [letterData, setLetterData] = useState(null);
@@ -125,8 +137,10 @@ export default function Status() {
               </span>
             </p>
             <p className="text-lg font-semibold text-gray-700 mb-4">
-              {(letterData.isApproved)?"Approved At": "Rejected At"}: 
-              <span className="font-normal">{letterData.approvedAt || ""}</span>
+              {letterData.isApproved ? "Approved At" : "Rejected At"}:
+              <span className="font-normal">
+                {formatDateTime(letterData.approvedAt) || ""}
+              </span>
             </p>
             {letterData.isApproved && (
               <p className="text-lg font-semibold text-blue-900 mb-4">

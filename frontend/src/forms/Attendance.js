@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import attendance from "../images/attendance.jpg";
 import Header from "../components/Header";
 
 export default function Attendance() {
@@ -47,11 +46,11 @@ export default function Attendance() {
   return (
     <>
       <Header />
-      <div className="flex justify-around p-8 bg-black min-h-screen">
+      <div className="flex justify-around p-8 bg-gradient-to-b from-[#D9AFD9] to-[#97D9E1] min-h-screen">
         <div className="flex-1 flex justify-center items-start">
           <div className="max-w-[80%] m-2 border border-black bg-purple-600">
             <img
-              src={attendance}
+              src="/images/attendance.jpg"
               alt="Letter example image"
               className="object-contain w-full h-auto"
             />

@@ -7,7 +7,6 @@ import Grid from "@mui/material/Grid";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import CardMedia from "@mui/material/CardMedia";
-import attendance from "../images/attendance.jpg";
 
 export default function Outpass() {
   const [formData, setFormData] = React.useState({
@@ -81,7 +80,7 @@ export default function Outpass() {
         >
           <CardMedia
             component="img"
-            image={attendance}
+            image="https://www.allbusinesstemplates.com/thumbs/73bebdff-8f02-4544-827e-2cdd8c451d56_1.png"
             title="Letter example image"
             sx={{ objectFit: "contain", margin: 0 }}
           />
