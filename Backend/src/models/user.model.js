@@ -8,9 +8,19 @@ const userSchema = new mongoose.Schema(
       required: [true, "Username is required"],
       unique: [true, "Username already taken"],
     },
+    role: {
+      type: String,
+      enum: ["student", "faculty", "admin"],
+      default: "student",
+    },
     rollNum: {
       type: String,
-      required: [true, "Roll number is required"],
+      required: [
+        function () {
+          return this.role === "student";
+        },
+        "Roll number is required for students",
+      ],
       minLength: [10, "Roll number should be 10 letters"],
       maxLength: [10, "Roll number should be 10 letters"],
     },
@@ -29,7 +39,12 @@ const userSchema = new mongoose.Schema(
     },
     branch: {
       type: String,
-      required: [true, "Branch is required"],
+      required: [
+        function () {
+          return this.role === "student" || this.role === "faculty";
+        },
+        "Branch/Department is required",
+      ],
       enum: {
         values: [
           "CSE",
