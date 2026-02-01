@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: 'Times New Roman', serif; margin: 40px; }
+        .header { text-align: center; margin-bottom: 30px; }
+        .content { font-size: 14pt; line-height: 1.6; }
+        .footer { margin-top: 50px; }
+        .signature { margin-top: 60px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2>VALLURUPALLI NAGESWARA RAO VIGNANA JYOTHI INSTITUTE OF ENGINEERING AND TECHNOLOGY</h2>
+        <h3>OUTPASS</h3>
+    </div>
+    
+    <div class="content">
+        <p><strong>Date:</strong> {{date}}</p>
+        <p><strong>Name:</strong> {{name}}</p>
+        <p><strong>Roll Number:</strong> {{rollNumber}}</p>
+        <p><strong>Branch:</strong> {{department}}</p>
+        <p><strong>Year:</strong> {{yearOfStudy}}</p>
+        
+        <br>
+        
+        <p><strong>Reason for Outpass:</strong></p>
+        <p>{{reason}}</p>
+    </div>
+
+    {{#if approvedBy}}
+    <div class="footer">
+        <p><strong>Approved By:</strong> {{approvedBy}}</p>
+        <p><strong>Approved At:</strong> {{approvedAt}}</p>
+    </div>
+    {{/if}}
+
+    {{#if qrCode}}
+    <div style="text-align: right; margin-top: 20px;">
+        <img src="{{qrCode}}" width="100" height="100" />
+    </div>
+    {{/if}}
+</body>
+</html>

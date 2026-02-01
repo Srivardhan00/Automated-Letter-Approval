@@ -21,5 +21,6 @@ router.route("/getHistory").get(verifyJWT, verifyRole(["student"]), getHistory);
 
 // Faculty Routes
 router.route("/approve/:id").post(verifyJWT, verifyRole(["faculty"]), approval);
+router.route("/pending").get(verifyJWT, verifyRole(["faculty"]), getPendingRequests);
 
 export default router;

@@ -36,7 +36,7 @@ const registerUser = asyncHandler(async (req, res) => {
     rollNum,
     firstName,
     lastName,
-    branch:'AIML',
+    branch,
   });
 
   const createdUser = await User.findById(user._id).select(
@@ -266,6 +266,16 @@ const updateDetails = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, user, "Account Details Updated!"));
 });
 
+const getAllUsers = asyncHandler(async (req, res) => {
+  const users = await User.find({}).select("-password -refreshToken");
+
+  if (!users) {
+    return res.status(200).json(new ApiResponse(200, [], "No users found"));
+  }
+
+  res.status(200).json(new ApiResponse(200, users, "Users fetched successfully"));
+});
+
 export {
   registerUser,
   loginUser,
@@ -274,4 +284,5 @@ export {
   changeCurrentPassword,
   getCurrentUser,
   updateDetails,
+  getAllUsers,
 };

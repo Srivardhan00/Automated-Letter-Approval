@@ -7,6 +7,7 @@ import {
   changeCurrentPassword,
   getCurrentUser,
   updateDetails,
+  getAllUsers,
 } from "../controllers/user.controller.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 
@@ -24,4 +25,8 @@ router.route("/refresh-token").get(createAccessToken);
 
 router.route("/get-user").get(verifyJWT, getCurrentUser);
 router.route("/update-details").patch(verifyJWT, updateDetails);
+// Admin Route
+import { verifyRole } from "../middlewares/verifyRole.js";
+router.route("/get-all-users").get(verifyJWT, verifyRole(["admin"]), getAllUsers);
+
 export default router;

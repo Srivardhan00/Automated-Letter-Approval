@@ -14,6 +14,9 @@ import Error from "./pages/Error";
 import Status from "./pages/Status";
 import { ToastContainer } from "react-toastify";
 import View from "./pages/View";
+import FacultyDashboard from "./pages/FacultyDashboard";
+import AdminDashboard from "./pages/AdminDashboard";
+
 function App() {
   return (
     <div>
@@ -32,7 +35,9 @@ function App() {
           <Route path="/to-conduct-event" element={<ConductEvent />} />
           <Route path="/history" element={<History />} />
           <Route path="/status/:id" element={<Status />} />
-          <Route path="/view/:id" element={<View />} />{" "}
+          <Route path="/view/:id" element={<View />} />
+          <Route path="/faculty-dashboard" element={<FacultyDashboard />} />
+          <Route path="/admin-dashboard" element={<AdminDashboard />} />
           <Route path="*" element={<Error />} />
         </Routes>
       </BrowserRouter>

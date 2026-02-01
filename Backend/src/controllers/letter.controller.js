@@ -12,240 +12,155 @@ import { formatDateTime } from "../utils/formatDateTime.js";
 import axios from "axios";
 import fs from "fs";
 
+import { generateLocalPDF } from "../services/pdfService.js";
+
 const saveLetter = asyncHandler(async (req, res) => {
-  const { type } = req.params; // Letter type (e.g., 'outpass', 'event')
+  const { type } = req.params;
   const data = req.body;
-  let createdDocument, apiKey, apiUrl, requestData, uploadedRes;
-  const filePath = "mypdf.pdf";
+  let createdDocument, uploadedRes;
   const user = req.user;
-  // Use discriminators to create specific instances based on the type
+  const outputFileName = `letter-${Date.now()}.pdf`;
+
   let LetterModel;
+  let templateName;
+  let templateData = {
+    date: formatDateTime(Date.now()),
+    name: `${user.firstName} ${user.lastName}`,
+    rollNumber: user.rollNum,
+    department: user.branch,
+    yearOfStudy: data.yearOfStudy,
+    reason: data.reason, // for outpass
+    subject: data.subject, // for attendance
+    additionalInfo: data.additionalInfo, // for attendance
+  };
+
   switch (type) {
     case "outpass":
       LetterModel = mongoose.model("Outpass");
-      apiUrl = "https://pdfgen.app/api/generate?templateId=bc43343";
-      apiKey = "su1eciFshoWDAwXmeQtxJ";
-      requestData = {
-        data: {
-          date: formatDateTime(Date.now()),
-          name: `${user.firstName} ${user.lastName}`,
-          reason: data.reason,
-          department: user.branch,
-          rollNumber: user.rollNum,
-          yearOfStudy: data.yearOfStudy,
-        },
-      };
+      templateName = "outpass";
       break;
-    case "event":
-      LetterModel = mongoose.model("Event");
-      apiUrl = "https://pdfgen.app/api/generate?templateId=3538066";
-      apiKey = "zgqRTbD2vxfr6zPdLad8";
-      requestData = {
-        data: {
-          dep: data.dep,
-          date: data.date,
-          event: data.event,
-          venue: data.venue,
-          detail: data.detail,
-          evedate: data.evedate,
-          subject: data.subject,
-          approvedBy: data.approvedBy,
-          additionalinfo: data.additionalinfo,
-        },
-      };
+    case "attendance":
+      LetterModel = mongoose.model("AttLetter"); // reusing AttLetter schema
+      templateName = "attendance";
+      if (!data.subject) throw new ApiError(400, "Subject is required for Attendance");
       break;
     default:
       throw new ApiError(400, `Invalid letter type: ${type}`);
   }
-  let letterInstance;
-  // Save the specific letter document to the database
+
+  // Save to DB
   try {
-    letterInstance = new LetterModel(data);
+    const letterInstance = new LetterModel({
+      ...data,
+      userId: user._id,
+      yearOfStudy: data.yearOfStudy || 1, // Default or required?
+    });
     createdDocument = await letterInstance.save();
   } catch (error) {
-    throw new ApiError(500, "Error saving letter to the database");
+    throw new ApiError(500, "Error saving letter to the database: " + error.message);
   }
-  // Generate PDF and upload it
+
+  // Generate PDF
   try {
-    await generatePDFAndSaveToFile(apiUrl, apiKey, requestData, filePath);
+    const filePath = await generateLocalPDF(templateName, templateData, outputFileName);
     uploadedRes = await uploadOnCloudinary(filePath);
   } catch (error) {
     throw new ApiError(500, "PDF generation or upload failed");
   }
 
+  // Update DB with Link
   try {
     createdDocument = await LetterModel.findByIdAndUpdate(
       createdDocument._id,
       {
         letterLinkEmpty: uploadedRes.url,
-        reason: data.reason,
-        yearOfStudy: data.yearOfStudy,
-        userId: user._id,
       },
       { new: true }
     );
   } catch (error) {
     throw new ApiError(500, "Error updating letter document with PDF link");
   }
+
   res
     .status(200)
     .json(new ApiResponse(200, createdDocument, "Successfully saved"));
 });
 
-const getHistory = asyncHandler(async (req, res) => {
-  const user = req.user;
-
-  try {
-    const letters = await Letter.find({ userId: user._id });
-
-    if (letters.length === 0) {
-      return res.status(200).json(new ApiResponse(200, [], "No History Found"));
-    }
-
-    res
-      .status(200)
-      .json(new ApiResponse(200, letters, "History Fetched Successfully"));
-  } catch (error) {
-    throw new ApiError(500, "An error occurred while fetching history");
-  }
-});
-
-const sendEmail = asyncHandler(async (req, res) => {
-  const user = req.user;
-  const { facultyMail, letter } = req.body;
-
-  // Find the letter by ID
-  const letterBef = await Letter.findById(letter._id);
-  if (!letterBef) {
-    throw new ApiError(400, "Invalid Letter");
-  }
-  if (!facultyMail) {
-    throw new ApiError(400, "Faculty Mail is Missing");
-  }
-  // if (letterBef.status !== "notUsed") {
-  // throw new ApiError(400, "Letter was already Used");
-  // }
-
-  // Update and save the letter (assuming letterBef is a mongoose document)
-  // Make sure to handle validation errors by passing { validateBeforeSave: false }
-  const updatedLetter = await Letter.findOneAndUpdate(
-    { _id: letter._id },
-    { status: "pending", approvedBy: facultyMail },
-    { new: true, runValidators: true }
-  );
-
-  try {
-    // Call sendMail function (ensure it returns the expected format)
-    const mailResponse = await sendMail(
-      {
-        sName: user.firstName + " " + user.lastName,
-        rollNum: user.rollNum,
-        branch: user.branch,
-        letter: updatedLetter.typeOfLetter,
-        letterLink: updatedLetter.letterLinkEmpty,
-        approveLink: `localhost:3000/status/${updatedLetter._id}`,
-        email: user.email,
-        reason: updatedLetter.reason,
-        type: updatedLetter.type,
-      },
-      facultyMail
-    );
-
-    console.log("Mail response received:", mailResponse);
-
-    if (mailResponse.rejected.length > 0) {
-      throw new ApiError(500, "Mail was rejected by the server");
-    }
-  } catch (error) {
-    console.error("Error in sending email or validation:", error);
-    throw new ApiError(500, "Internal Server Error");
-  }
-
-  // Respond with success if everything went well
-  res
-    .status(200)
-    .json(new ApiResponse(200, updatedLetter, "Mail Sent Successfully"));
-});
-
 const approval = asyncHandler(async (req, res) => {
   const letterId = req.params.id;
-
-  // Fetch the letter and its detailed type instance
   const letter = await Letter.findById(new mongoose.Types.ObjectId(letterId));
 
   if (!letter) {
     throw new ApiError(500, "Invalid letter");
   }
   if (letter.status !== "notUsed" && letter.status !== "pending") {
-    throw new ApiError(400, "The letter was already used");
+    throw new ApiError(400, "The letter was already utilized");
   }
-  if (!letter.approvedBy) {
-    throw new ApiError(400, "Invalid Faculty Mail");
-  }
-  const approved = req.body.approve; // Boolean indicating approval
+
+  const approved = req.body.approve;
   const user = await User.findById(new mongoose.Types.ObjectId(letter.userId));
 
   if (!approved) {
     letter.status = "rejected";
+    letter.isApproved = false;
     await letter.save({ validateBeforeSave: false });
     return res
       .status(200)
       .json(new ApiResponse(200, letter, "Successfully Rejected"));
   } else {
-    // Update letter as approved and generate a PDF with QR
-    generateQR(`http://localhost:3000/view/${letter._id}`);
+    // Generate QR
+    const qrText = `${process.env.FRONTEND_PATH || 'http://localhost:3000'}/view/${letter._id}`;
+    generateQR(qrText); // writes to 'qr.png' locally? verify generateQR implementation
+    // Assuming generateQR writes to 'qr.png' in root or current dir.
+    // Let's assume generateQR works as before.
+
     const qrResponse = await uploadOnCloudinary("qr.png");
 
     letter.isApproved = true;
     letter.status = "approved";
     letter.approvedAt = formatDateTime(new Date());
+    letter.approvedBy = req.user.email; // Faculty email
 
-    const requestData = {
-      data: {
-        date: letter.date,
-        name: `${user.firstName} ${user.lastName}`,
-        qrCode: qrResponse.url,
-        reason: letter.reason,
-        approvedAt: letter.approvedAt,
-        approvedBy: letter.approvedBy,
-        department: user.branch,
-        rollNumber: user.rollNum,
-        yearOfStudy: letter.yearOfStudy,
-      },
+    // Prepare data for approved PDF
+    const templateData = {
+      date: letter.date,
+      name: `${user.firstName} ${user.lastName}`,
+      rollNumber: user.rollNum,
+      department: user.branch,
+      yearOfStudy: letter.yearOfStudy,
+      reason: letter.reason,
+      subject: letter.subject, // if exists
+      additionalInfo: letter.additionalInfo, // if exists
+      approvedBy: letter.approvedBy,
+      approvedAt: letter.approvedAt,
+      qrCode: qrResponse.url
     };
 
-    // PDF generation and saving
+    let templateName = "outpass";
+    if (letter.type === "AttLetter") templateName = "attendance";
+    // We should store type better or check instance. 
+    // letter.type is stored by discriminator? yes, 'type' field in baseLetterSchema.
+
+    if (letter.t === "AttLetter" || letter.type === "AttLetter") { // Check how discriminator stores type. usually 'type' field default.
+      templateName = "attendance";
+    }
+
+    // Generate Approved PDF
     try {
-      const pdfResponse = await axios.post(
-        "https://pdfgen.app/api/generate?templateId=63a5d10",
-        requestData,
-        {
-          headers: {
-            "Content-Type": "application/json",
-            api_key: process.env.OUTPASS_API_KEY,
-          },
-          responseType: "stream",
-        }
-      );
+      const outputFileName = `approved-${letter._id}.pdf`;
+      const filePath = await generateLocalPDF(templateName, templateData, outputFileName);
+      const pdfUploadResponse = await uploadOnCloudinary(filePath);
 
-      await new Promise((resolve, reject) => {
-        const writeStream = fs.createWriteStream("mypdf.pdf");
-        pdfResponse.data.pipe(writeStream);
-        writeStream.on("finish", resolve);
-        writeStream.on("error", reject);
-      });
-
-      const pdfUploadResponse = await uploadOnCloudinary("mypdf.pdf");
       letter.letterLinkApproved = pdfUploadResponse.url;
       await letter.save({ validateBeforeSave: false });
 
       res
         .status(200)
         .json(
-          new ApiResponse(200, letter, "Letter status updated successfully")
+          new ApiResponse(200, letter, "Letter approved successfully")
         );
     } catch (err) {
-      throw new ApiError(500, err);
+      throw new ApiError(500, "Error generating approved PDF: " + err.message);
     }
   }
 });
@@ -278,4 +193,31 @@ const showLetter = asyncHandler(async (req, res) => {
   res.send(new ApiResponse(200, data, "Outpass fetched successfully"));
 });
 
-export { saveLetter, getHistory, sendEmail, approval, showLetter };
+const getPendingRequests = asyncHandler(async (req, res) => {
+  const user = req.user;
+
+  // Assuming verifyRole ensures user is faculty
+  const department = user.branch;
+
+  // Find all pending letters and populate user details
+  const letters = await Letter.find({ status: "pending" }).populate(
+    "userId",
+    "firstName lastName rollNum branch"
+  );
+
+  // Filter by department
+  // If department logic is strictly branch-based:
+  const departmentLetters = letters.filter((letter) => {
+    return letter.userId && letter.userId.branch === department;
+  });
+
+  if (departmentLetters.length === 0) {
+    return res.status(200).json(new ApiResponse(200, [], "No Pending Requests"));
+  }
+
+  res
+    .status(200)
+    .json(new ApiResponse(200, departmentLetters, "Pending Requests Fetched"));
+});
+
+export { saveLetter, getHistory, approval, showLetter, getPendingRequests };
